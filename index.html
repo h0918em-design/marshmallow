@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>크리스마스 코코아 마시멜로우 모으기 🎄</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Gaegu & Gowun Dodum -->
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Gaegu', 'Gowun Dodum', cursive, sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            background: linear-gradient(135deg, #FFF5F5 0%, #FDF2E9 50%, #FCE7F3 100%);
+        }
+
+        /* 눈 내리는 애니메이션 효과 (베이지/핑크 감성) */
+        .snowflake {
+            position: absolute;
+            top: -15px;
+            color: #FFF;
+            text-shadow: 0 0 5px rgba(244, 114, 182, 0.4);
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.9;
+            }
+            100% {
+                transform: translateY(105vh) rotate(360deg);
+                opacity: 0.2;
+            }
+        }
+
+        /* 메인 카드 프레임 */
+        #game-container {
+            box-shadow: 0 20px 40px rgba(244, 114, 182, 0.15), 0 0 25px rgba(255, 255, 255, 0.8);
+        }
+
+        /* 은은한 핑크/골드 전구 장식 */
+        .light-string {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+        .light {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: glow 1.8s infinite alternate;
+        }
+        .light:nth-child(4n+1) { background-color: #F472B6; box-shadow: 0 0 8px #F472B6; animation-delay: 0s; }
+        .light:nth-child(4n+2) { background-color: #FCD34D; box-shadow: 0 0 8px #FCD34D; animation-delay: 0.4s; }
+        .light:nth-child(4n+3) { background-color: #FB7185; box-shadow: 0 0 8px #FB7185; animation-delay: 0.8s; }
+        .light:nth-child(4n+4) { background-color: #A7F3D0; box-shadow: 0 0 8px #A7F3D0; animation-delay: 1.2s; }
+
+        @keyframes glow {
+            from { opacity: 0.4; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(253, 242, 233, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(244, 114, 182, 0.4);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 sm:p-4 text-stone-700">
+
+    <!-- 크리스마스 전구 장식 -->
+    <div class="light-string">
+        <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
+        <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
+        <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
+    </div>
+
+    <!-- 배경 눈 송이 컨테이너 -->
+    <div id="snow-container" class="fixed inset-0 pointer-events-none z-0"></div>
+
+    <!-- 메인 게임 프레임 (화이트 & 베이지 핑크 테마) -->
+    <div id="game-container" class="relative w-full max-w-md h-[92vh] max-h-[800px] bg-white/80 rounded-[32px] border-4 border-pink-100 overflow-hidden flex flex-col z-10 backdrop-blur-md shadow-2xl">
+
+        <!-- 헤더 / 점수 & 시간 표시바 -->
+        <div id="hud" class="w-full bg-pink-50/90 p-3.5 flex justify-between items-center z-10 border-b-2 border-pink-100 hidden">
+            <div class="flex items-center gap-2">
+                <span class="text-sm bg-white text-pink-500 px-3 py-1 rounded-full border border-pink-200 font-bold shadow-sm" id="player-display-name">플레이어</span>
+                <button id="music-toggle-btn" class="w-9 h-9 rounded-full bg-pink-100 text-pink-500 hover:bg-pink-200 flex items-center justify-center transition shadow-sm">
+                    <i class="fas fa-music"></i>
+                </button>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-center">
+                    <div class="text-xs text-stone-500 font-bold">남은 시간</div>
+                    <div id="timer-display" class="text-2xl font-bold text-pink-500">60s</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-stone-500 font-bold">점수</div>
+                    <div id="score-display" class="text-2xl font-bold text-amber-700">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 캔버스 영역 -->
+        <div class="relative flex-1 w-full h-full overflow-hidden">
+            <canvas id="gameCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+            <!-- 1. 시작 및 규칙 화면 (Start Overlay) -->
+            <div id="start-screen" class="absolute inset-0 bg-white/95 flex flex-col justify-between p-6 z-30 overflow-y-auto">
+                <div class="text-center mt-2">
+                    <span class="inline-block bg-pink-100 text-pink-500 text-xs px-3.5 py-1 rounded-full font-bold uppercase tracking-wider mb-2 shadow-sm border border-pink-200">Merry Christmas 💕</span>
+                    <h1 class="text-3xl font-extrabold text-stone-700 drop-shadow-sm">
+                        코코아 마시멜로우 퐁당 ☕
+                    </h1>
+                    <p class="text-sm text-stone-500 mt-1">따뜻한 베이지 코코아 컵에 마시멜로우를 모아보세요!</p>
+                </div>
+
+                <!-- 게임 규칙 -->
+                <div class="bg-pink-50/60 rounded-2xl p-4 border border-pink-100 my-2 shadow-sm">
+                    <h2 class="text-pink-500 text-center font-bold text-lg mb-2.5 flex items-center justify-center gap-2">
+                        <i class="fas fa-heart text-pink-400"></i> 게임 규칙 안내
+                    </h2>
+                    
+                    <ul class="space-y-2 text-sm text-stone-600">
+                        <li class="flex items-center gap-2 bg-white/80 p-2.5 rounded-xl border border-pink-100/60">
+                            <span class="text-xl">⏱️</span>
+                            <span><strong>60초 동안</strong> 마시멜로우를 쏙쏙 받아주세요! (놓쳐도 괜찮아요)</span>
+                        </li>
+                        <li class="flex items-center gap-2 bg-white/80 p-2.5 rounded-xl border border-pink-100/60">
+                            <span class="text-xl">🖐️</span>
+                            <span><strong>화면을 터치/클릭한 채로 좌우로 이끌면</strong> 코코아 컵이 손길을 따라 이동해요!</span>
+                        </li>
+                    </ul>
+
+                    <!-- 마시멜로우 종류 설명 -->
+                    <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-pink-100 text-center">
+                        <div class="bg-white/90 p-2.5 rounded-xl flex flex-col items-center border border-stone-100 shadow-sm">
+                            <div class="w-8 h-8 bg-amber-50 rounded-lg shadow-inner mb-1 flex items-center justify-center text-sm border border-amber-100">🤍</div>
+                            <span class="text-xs font-bold text-stone-600">흰 마시멜로우</span>
+                            <span class="text-sm font-extrabold text-emerald-500">+10점</span>
+                        </div>
+                        <div class="bg-white/90 p-2.5 rounded-xl flex flex-col items-center border border-stone-100 shadow-sm">
+                            <div class="w-8 h-8 bg-amber-900/10 rounded-lg shadow-inner mb-1 flex items-center justify-center text-sm border border-amber-200">🍫</div>
+                            <span class="text-xs font-bold text-stone-600">초코 마시멜로우</span>
+                            <span class="text-sm font-extrabold text-amber-600">+20점</span>
+                        </div>
+                        <div class="bg-white/90 p-2.5 rounded-xl flex flex-col items-center border border-stone-100 shadow-sm">
+                            <div class="w-8 h-8 bg-pink-100 rounded-lg shadow-inner mb-1 flex items-center justify-center text-sm border border-pink-200">🍓</div>
+                            <span class="text-xs font-bold text-stone-600">핑크 마시멜로우</span>
+                            <span class="text-sm font-extrabold text-rose-500">-15점</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 플레이어 이름 입력 -->
+                <div class="space-y-3 mb-1">
+                    <div>
+                        <label class="block text-xs font-bold text-stone-500 mb-1 pl-1">플레이어 이름</label>
+                        <input type="text" id="player-name-input" maxlength="10" placeholder="이름을 입력하세요 (예: 루돌프)" 
+                            class="w-full bg-pink-50/50 border-2 border-pink-200 rounded-2xl px-4 py-3 text-stone-700 placeholder-stone-400 text-center focus:outline-none focus:border-pink-400 transition font-bold text-base shadow-inner">
+                    </div>
+                    <button id="start-btn" class="w-full bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold py-3.5 rounded-2xl shadow-md border border-pink-200 text-xl active:scale-95 transition transform">
+                        🎄 시작하기 🎄
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. 게임 오버 / 결과 및 순위표 화면 (Game Over Overlay) -->
+            <div id="game-over-screen" class="absolute inset-0 bg-white/95 flex flex-col justify-between p-6 z-30 hidden overflow-y-auto">
+                <div class="text-center mt-2">
+                    <span class="text-4xl">🎁</span>
+                    <h2 class="text-3xl font-extrabold text-stone-700 mt-1">시간 종료!</h2>
+                    <p class="text-sm text-stone-500">달콤하고 따뜻한 크리스마스 코코아 완성!</p>
+                </div>
+
+                <!-- 플레이 결과 summary -->
+                <div class="bg-pink-50/80 rounded-2xl p-4 border border-pink-200 my-2 text-center relative overflow-hidden shadow-sm">
+                    <div class="text-xs text-stone-500 font-bold uppercase">최종 획득 점수</div>
+                    <div id="final-score" class="text-4xl font-extrabold text-pink-500 my-1">0점</div>
+                    <div id="rank-badge" class="inline-block bg-white text-pink-500 text-xs px-3.5 py-1 rounded-full border border-pink-200 font-bold shadow-sm">
+                        현재 순위: - 위
+                    </div>
+                </div>
+
+                <!-- 명예의 전당 / 순위표 -->
+                <div class="flex-1 bg-white rounded-2xl p-3 border border-pink-100 overflow-hidden flex flex-col mb-3 shadow-sm">
+                    <h3 class="text-sm font-bold text-stone-600 mb-2 flex items-center justify-between px-1">
+                        <span><i class="fas fa-trophy text-amber-400 mr-1"></i> 크리스마스 순위표</span>
+                        <span class="text-xs text-stone-400">TOP 5</span>
+                    </h3>
+                    <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="leaderboard-list">
+                        <!-- Leaderboard items injected via JS -->
+                    </div>
+                </div>
+
+                <!-- 재도전 버튼 -->
+                <div class="flex gap-2">
+                    <button id="restart-btn" class="flex-1 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold py-3 rounded-2xl shadow-md border border-pink-200 text-lg active:scale-95 transition">
+                        다시 하기 🔄
+                    </button>
+                    <button id="change-name-btn" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold px-4 rounded-2xl border border-stone-200 text-sm active:scale-95 transition">
+                        이름 변경
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Global Audio System (AudioContext 공유로 먹통 현상 완전 해결)
+        let globalAudioCtx = null;
+
+        function getAudioContext() {
+            if (!globalAudioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                globalAudioCtx = new AudioContext();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
+            return globalAudioCtx;
+        }
+
+        // ==========================================
+        // 1. 오르골 배경음악 (신나는 징글벨 캐롤 버전)
+        // ==========================================
+        class MusicBoxBGM {
+            constructor() {
+                this.isPlaying = false;
+                this.isMuted = false;
+                this.timerId = null;
+                this.noteIndex = 0;
+
+                // "Jingle Bells" 오르골 계이름 데이터
+                const D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
+                const C5 = 523.25, D5 = 587.33, E5 = 659.25, F5 = 698.46, G5 = 783.99;
+
+                this.tempo = 150;
+                this.melody = [
+                    // Jingle bells, jingle bells, jingle all the way
+                    {f: E5, d: 1}, {f: E5, d: 1}, {f: E5, d: 2},
+                    {f: E5, d: 1}, {f: E5, d: 1}, {f: E5, d: 2},
+                    {f: E5, d: 1}, {f: G5, d: 1}, {f: C5, d: 1.5}, {f: D5, d: 0.5},
+                    {f: E5, d: 4},
+                    // Oh what fun it is to ride in a one-horse open sleigh
+                    {f: F5, d: 1}, {f: F5, d: 1}, {f: F5, d: 1.5}, {f: F5, d: 0.5},
+                    {f: F5, d: 1}, {f: E5, d: 1}, {f: E5, d: 1}, {f: E5, d: 0.5}, {f: E5, d: 0.5},
+                    {f: E5, d: 1}, {f: D5, d: 1}, {f: D5, d: 1}, {f: E5, d: 1},
+                    {f: D5, d: 2}, {f: G5, d: 2}
+                ];
+            }
+
+            playTone(freq, duration) {
+                if (this.isMuted) return;
+                const ctx = getAudioContext();
+                if (!ctx) return;
+
+                try {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+                    // 맑고 투명한 오르골 Bell 음색
+                    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration * 0.85);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + duration);
+                } catch (e) {}
+            }
+
+            start() {
+                getAudioContext();
+                if (this.isPlaying) return;
+                
+                this.isPlaying = true;
+                this.noteIndex = 0;
+                this.scheduleNextNote();
+            }
+
+            scheduleNextNote() {
+                if (!this.isPlaying) return;
+
+                const currentNote = this.melody[this.noteIndex];
+                const beatDuration = (60 / this.tempo);
+                const duration = currentNote.d * beatDuration;
+
+                this.playTone(currentNote.f, duration);
+
+                this.noteIndex = (this.noteIndex + 1) % this.melody.length;
+                this.timerId = setTimeout(() => {
+                    this.scheduleNextNote();
+                }, duration * 1000);
+            }
+
+            stop() {
+                this.isPlaying = false;
+                if (this.timerId) clearTimeout(this.timerId);
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                return this.isMuted;
+            }
+        }
+
+        // 연속 획득해도 안 먹통이 되는 가벼운 효과음
+        class SoundEffects {
+            static playCollectSound(isPositive, isChoco = false) {
+                try {
+                    const ctx = getAudioContext();
+                    if (!ctx) return;
+
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    const now = ctx.currentTime;
+
+                    if (isPositive) {
+                        osc.type = 'sine';
+                        const startFreq = isChoco ? 587.33 : 659.25; // D5 or E5
+                        const endFreq = isChoco ? 880.00 : 1046.50; // A5 or C6
+                        
+                        osc.frequency.setValueAtTime(startFreq, now);
+                        osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.1);
+                        
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+                        osc.start(now);
+                        osc.stop(now + 0.1);
+                    } else {
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(320, now);
+                        osc.frequency.linearRampToValueAtTime(130, now + 0.15);
+                        
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                        osc.start(now);
+                        osc.stop(now + 0.15);
+                    }
+                } catch(e) {}
+            }
+        }
+
+        // ==========================================
+        // 2. 게임 메인 로직 및 캔버스 엔진
+        // ==========================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = {
+            running: false,
+            score: 0,
+            timeLeft: 60,
+            playerName: '',
+            lastTime: 0,
+            spawnTimer: 0,
+            spawnInterval: 0.62,
+            timerIntervalId: null
+        };
+
+        const bgmPlayer = new MusicBoxBGM();
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            if (mug) mug.init();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // 배경 눈 파티클
+        const snowContainer = document.getElementById('snow-container');
+        for (let i = 0; i < 30; i++) {
+            const flake = document.createElement('div');
+            flake.className = 'snowflake';
+            flake.innerHTML = Math.random() > 0.3 ? '❄' : '🌸';
+            flake.style.left = `${Math.random() * 100}vw`;
+            flake.style.fontSize = `${Math.random() * 10 + 10}px`;
+            flake.style.animationDuration = `${Math.random() * 6 + 6}s`;
+            flake.style.animationDelay = `${Math.random() * 5}s`;
+            snowContainer.appendChild(flake);
+        }
+
+        // ------------------------------------------
+        // 귀엽게 업그레이드된 코코아 컵 (플레이어)
+        // ------------------------------------------
+        const mug = {
+            x: 0,
+            y: 0,
+            width: 90,
+            height: 75,
+            isDragging: false,
+
+            init() {
+                this.width = Math.min(100, canvas.width * 0.27);
+                this.height = this.width * 0.88;
+                this.x = canvas.width / 2 - (this.width * 0.85) / 2;
+                this.y = canvas.height - this.height - 22;
+            },
+
+            moveTo(targetX) {
+                const cupBodyWidth = this.width * 0.85;
+                let newX = targetX - cupBodyWidth / 2;
+                this.x = Math.max(5, Math.min(newX, canvas.width - cupBodyWidth - 5));
+            },
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                const bodyW = this.width * 0.85;
+
+                // 0. 배경 후면 지팡이 사탕 (Candy Cane 🍭)
+                ctx.save();
+                ctx.translate(bodyW * 0.75, -this.height * 0.25);
+                ctx.rotate(0.3);
+                // 사탕 대
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, Math.PI, 0, false);
+                ctx.lineTo(12, 28);
+                ctx.stroke();
+                // 빨간 줄무늬
+                ctx.strokeStyle = '#EF4444';
+                ctx.lineWidth = 8;
+                ctx.setLineDash([4, 5]);
+                ctx.stroke();
+                ctx.restore();
+
+                // 1. 코코아 컵 손잡이 (베이지 핑크 푹신한 통통 손잡이)
+                ctx.beginPath();
+                ctx.strokeStyle = '#F472B6'; 
+                ctx.lineWidth = bodyW * 0.15;
+                ctx.lineCap = 'round';
+                ctx.arc(bodyW + 3, this.height * 0.48, this.height * 0.25, -Math.PI * 0.55, Math.PI * 0.55);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFF0F5';
+                ctx.lineWidth = bodyW * 0.06;
+                ctx.arc(bodyW + 3, this.height * 0.48, this.height * 0.25, -Math.PI * 0.55, Math.PI * 0.55);
+                ctx.stroke();
+
+                // 2. 컵 본체 (크림 베이지 핑크 & 부드러운 둥근 라인)
+                ctx.fillStyle = '#FFF5F7';
+                ctx.strokeStyle = '#F472B6';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.roundRect(0, 0, bodyW, this.height, [4, 4, 28, 28]);
+                ctx.fill();
+                ctx.stroke();
+
+                // 컵 광택 하이라이트
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.roundRect(5, 6, 6, this.height - 18, 3);
+                ctx.fill();
+
+                // 3. 루돌프 귀여운 작은 뿔 장식 🦌
+                ctx.fillStyle = '#D97706';
+                // 왼쪽 뿔
+                ctx.beginPath();
+                ctx.roundRect(-4, 2, 6, 12, 3);
+                ctx.roundRect(-8, 4, 6, 5, 2);
+                ctx.fill();
+                // 오른쪽 뿔
+                ctx.beginPath();
+                ctx.roundRect(bodyW - 2, 2, 6, 12, 3);
+                ctx.roundRect(bodyW + 2, 4, 6, 5, 2);
+                ctx.fill();
+
+                // 4. 따뜻한 리치 밀크 코코아 음료 퐁당
+                ctx.fillStyle = '#5C2C16';
+                ctx.beginPath();
+                ctx.ellipse(bodyW / 2, 3, bodyW / 2 - 2, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 하트 코코아 라떼 아트
+                ctx.fillStyle = '#FBCFE8';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.5 - 3, 2, 3, Math.PI, 0, false);
+                ctx.arc(bodyW * 0.5 + 3, 2, 3, Math.PI, 0, false);
+                ctx.lineTo(bodyW * 0.5, 7);
+                ctx.closePath();
+                ctx.fill();
+
+                // 5. 풍성하고 폭신폭신한 3단 몽글 크림 ☁️
+                ctx.fillStyle = '#FFFFFF';
+                ctx.strokeStyle = '#FCE7F3';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.25, 1, 12, 0, Math.PI * 2);
+                ctx.arc(bodyW * 0.75, 1, 12, 0, Math.PI * 2);
+                ctx.arc(bodyW * 0.5, -4, 15, 0, Math.PI * 2);
+                ctx.arc(bodyW * 0.38, -9, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // 6. 싱싱한 레드 체리 토핑 🍒
+                ctx.fillStyle = '#E11D48';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.38, -14, 6, 0, Math.PI * 2);
+                ctx.fill();
+                // 체리 하이라이트
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.38 - 2, -16, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                // 체리 줄기
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(bodyW * 0.38, -18);
+                ctx.quadraticCurveTo(bodyW * 0.38 + 6, -23, bodyW * 0.38 + 4, -26);
+                ctx.stroke();
+
+                // 7. 초귀여운 하트 눈망울 & 볼터치 얼굴
+                // 반짝반짝 하트 눈 (왼쪽)
+                ctx.fillStyle = '#374151';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.28, this.height * 0.55, 4.2, 0, Math.PI * 2);
+                ctx.arc(bodyW * 0.72, this.height * 0.55, 4.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 눈 속 하트 하이라이트 💕
+                ctx.fillStyle = '#F472B6';
+                ctx.font = 'bold 7px sans-serif';
+                ctx.fillText('♥', bodyW * 0.28 - 3, this.height * 0.55 + 2.5);
+                ctx.fillText('♥', bodyW * 0.72 - 3, this.height * 0.55 + 2.5);
+
+                // 분홍빛 통통한 솜사탕 볼터치
+                ctx.fillStyle = '#FB7185';
+                ctx.globalAlpha = 0.55;
+                ctx.beginPath();
+                ctx.ellipse(bodyW * 0.17, this.height * 0.65, 6.5, 4.5, 0, 0, Math.PI * 2);
+                ctx.ellipse(bodyW * 0.83, this.height * 0.65, 6.5, 4.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                // 귀여운 'ㅅ' 모양 고양이 입 🐱
+                ctx.beginPath();
+                ctx.strokeStyle = '#374151';
+                ctx.lineWidth = 2.2;
+                ctx.lineCap = 'round';
+                ctx.moveTo(bodyW * 0.43, this.height * 0.62);
+                ctx.quadraticCurveTo(bodyW * 0.47, this.height * 0.68, bodyW * 0.5, this.height * 0.63);
+                ctx.quadraticCurveTo(bodyW * 0.53, this.height * 0.68, bodyW * 0.57, this.height * 0.62);
+                ctx.stroke();
+
+                // 중앙 미니 레드 리본 🎀
+                ctx.fillStyle = '#EF4444';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.5 - 5, this.height * 0.32, 4, 0, Math.PI * 2);
+                ctx.arc(bodyW * 0.5 + 5, this.height * 0.32, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FDE8E8';
+                ctx.beginPath();
+                ctx.arc(bodyW * 0.5, this.height * 0.32, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        };
+
+        // ------------------------------------------
+        // 더 귀여워진 마시멜로우 클래스
+        // ------------------------------------------
+        class Marshmallow {
+            constructor() {
+                this.radius = Math.min(23, canvas.width * 0.058);
+                this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+                this.y = -this.radius - 10;
+                this.speed = Math.random() * 100 + 135;
+                this.rotation = (Math.random() - 0.5) * 0.4;
+                this.rotSpeed = (Math.random() - 0.5) * 1.2;
+
+                const rand = Math.random();
+                if (rand < 0.60) {
+                    this.type = 'white';
+                    this.score = 10;
+                    this.color = '#FFFFFF';
+                    this.borderColor = '#FBCFE8';
+                } else if (rand < 0.85) {
+                    this.type = 'choco';
+                    this.score = 20;
+                    this.color = '#7C2D12';
+                    this.borderColor = '#451A03';
+                } else {
+                    this.type = 'pink';
+                    this.score = -15;
+                    this.color = '#F472B6';
+                    this.borderColor = '#BE185D';
+                }
+            }
+
+            update(dt) {
+                this.y += this.speed * dt;
+                this.rotation += this.rotSpeed * dt;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                const size = this.radius * 2;
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = this.borderColor;
+                ctx.lineWidth = 2.8;
+
+                // 퐁신퐁신 둥근 사각형 몸통
+                ctx.beginPath();
+                ctx.roundRect(-this.radius, -this.radius, size, size, 12);
+                ctx.fill();
+                ctx.stroke();
+
+                // 1. 흰 마시멜로우 - 방긋 웃는 표정과 볼터치 🤍
+                if (this.type === 'white') {
+                    // 핑크 볼
+                    ctx.fillStyle = '#F472B6';
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.arc(-size*0.28, size*0.1, 3.5, 0, Math.PI*2);
+                    ctx.arc(size*0.28, size*0.1, 3.5, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+
+                    // 눈 (윙크 + 미소)
+                    ctx.strokeStyle = '#44403C';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(-size*0.2, -size*0.08, 2.5, 0, Math.PI*2); // 왼쪽 눈
+                    ctx.fill();
+                    
+                    // 오른쪽 윙크 눈 ( ^ )
+                    ctx.beginPath();
+                    ctx.moveTo(size*0.1, -size*0.05);
+                    ctx.lineTo(size*0.2, -size*0.15);
+                    ctx.lineTo(size*0.3, -size*0.05);
+                    ctx.stroke();
+
+                    // 작은 입
+                    ctx.beginPath();
+                    ctx.arc(0, size*0.12, 3, 0.1, Math.PI - 0.1);
+                    ctx.stroke();
+                } 
+                // 2. 초코 마시멜로우 - 알록달록 스프링클 토핑 🍫
+                else if (this.type === 'choco') {
+                    // 스프링클 알갱이 장식
+                    const sprinkles = [
+                        {x: -size*0.2, y: -size*0.25, c: '#F472B6'},
+                        {x: size*0.15, y: -size*0.28, c: '#FCD34D'},
+                        {x: -size*0.25, y: size*0.2, c: '#A7F3D0'}
+                    ];
+                    sprinkles.forEach(s => {
+                        ctx.fillStyle = s.c;
+                        ctx.beginPath();
+                        ctx.roundRect(s.x, s.y, 6, 3, 2);
+                        ctx.fill();
+                    });
+
+                    // 하얀 초롱초롱 눈
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(-size*0.18, -size*0.05, 2.5, 0, Math.PI*2);
+                    ctx.arc(size*0.18, -size*0.05, 2.5, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // 미소 입
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    ctx.arc(0, size*0.08, 3.5, 0.1, Math.PI - 0.1);
+                    ctx.stroke();
+                } 
+                // 3. 핑크 마시멜로우 - 메롱 혀 삐쭉 귀여운 장난꾸러기 🍓
+                else {
+                    // 발그레한 진분홍 볼
+                    ctx.fillStyle = '#F43F5E';
+                    ctx.globalAlpha = 0.4;
+                    ctx.beginPath();
+                    ctx.arc(-size*0.28, size*0.05, 3.5, 0, Math.PI*2);
+                    ctx.arc(size*0.28, size*0.05, 3.5, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+
+                    // 장난꾸러기 눈 ( > < )
+                    ctx.strokeStyle = '#881337';
+                    ctx.lineWidth = 2;
+                    // 왼쪽 >
+                    ctx.beginPath();
+                    ctx.moveTo(-size*0.28, -size*0.15);
+                    ctx.lineTo(-size*0.18, -size*0.08);
+                    ctx.lineTo(-size*0.28, -size*0.01);
+                    ctx.stroke();
+                    // 오른쪽 <
+                    ctx.beginPath();
+                    ctx.moveTo(size*0.28, -size*0.15);
+                    ctx.lineTo(size*0.18, -size*0.08);
+                    ctx.lineTo(size*0.28, -size*0.01);
+                    ctx.stroke();
+
+                    // 메롱 혀 👅
+                    ctx.fillStyle = '#FB7185';
+                    ctx.beginPath();
+                    ctx.arc(0, size*0.12, 4, 0, Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // 둥둥 뜨는 점수 획득 텍스트
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1.0;
+                this.life = 0.8;
+            }
+
+            update(dt) {
+                this.y -= 38 * dt;
+                this.alpha -= (1 / this.life) * dt;
+            }
+
+            draw() {
+                if (this.alpha <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.font = 'bold 24px Gaegu';
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 4;
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        let marshmallows = [];
+        let floatTexts = [];
+
+        // ==========================================
+        // 3. 완벽히 매끄러운 컵 드래그/이동 터치 이벤트
+        // ==========================================
+
+        function getXFromEvent(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = 0;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+            return clientX - rect.left;
+        }
+
+        function onPointerDown(e) {
+            if (!gameState.running) return;
+            mug.isDragging = true;
+            const x = getXFromEvent(e);
+            mug.moveTo(x);
+        }
+
+        function onPointerMove(e) {
+            if (!gameState.running || !mug.isDragging) return;
+            if (e.cancelable) e.preventDefault();
+            const x = getXFromEvent(e);
+            mug.moveTo(x);
+        }
+
+        function onPointerUp(e) {
+            mug.isDragging = false;
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+        window.addEventListener('touchcancel', onPointerUp);
+
+        // ==========================================
+        // 4. 게임 업데이트 루프
+        // ==========================================
+
+        function updateGame(timestamp) {
+            if (!gameState.running) return;
+
+            if (!gameState.lastTime) gameState.lastTime = timestamp;
+            const dt = Math.min((timestamp - gameState.lastTime) / 1000, 0.1);
+            gameState.lastTime = timestamp;
+
+            // 마시멜로우 생성
+            gameState.spawnTimer += dt;
+            if (gameState.spawnTimer >= gameState.spawnInterval) {
+                marshmallows.push(new Marshmallow());
+                gameState.spawnTimer = 0;
+            }
+
+            // 마시멜로우 이동 & 컵 획득 판정
+            for (let i = marshmallows.length - 1; i >= 0; i--) {
+                const m = marshmallows[i];
+                m.update(dt);
+
+                const mugTopY = mug.y;
+                const mugLeft = mug.x;
+                const mugRight = mug.x + mug.width * 0.85;
+
+                if (
+                    m.y + m.radius >= mugTopY &&
+                    m.y - m.radius <= mugTopY + 24 &&
+                    m.x >= mugLeft - 10 &&
+                    m.x <= mugRight + 10
+                ) {
+                    gameState.score += m.score;
+                    if (gameState.score < 0) gameState.score = 0;
+                    
+                    document.getElementById('score-display').innerText = gameState.score;
+
+                    const textVal = m.score > 0 ? `+${m.score}` : `${m.score}`;
+                    const textColor = m.score === 20 ? '#D97706' : (m.score === 10 ? '#059669' : '#E11D48');
+                    floatTexts.push(new FloatingText(m.x, mugTopY - 10, textVal, textColor));
+                    
+                    // 효과음 연속 재생 최적화 호출
+                    SoundEffects.playCollectSound(m.score > 0, m.type === 'choco');
+
+                    marshmallows.splice(i, 1);
+                    continue;
+                }
+
+                if (m.y - m.radius > canvas.height) {
+                    marshmallows.splice(i, 1);
+                }
+            }
+
+            for (let i = floatTexts.length - 1; i >= 0; i--) {
+                const ft = floatTexts[i];
+                ft.update(dt);
+                if (ft.alpha <= 0) {
+                    floatTexts.splice(i, 1);
+                }
+            }
+
+            render();
+            requestAnimationFrame(updateGame);
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 따뜻한 베이지 배경 눈 언덕
+            ctx.fillStyle = 'rgba(253, 242, 233, 0.7)';
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.25, canvas.height + 40, canvas.width * 0.45, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.8, canvas.height + 60, canvas.width * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+
+            mug.draw();
+            marshmallows.forEach(m => m.draw());
+            floatTexts.forEach(ft => ft.draw());
+        }
+
+        // ==========================================
+        // 5. 게임 UI 및 순위표 제어
+        // ==========================================
+
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const hud = document.getElementById('hud');
+        const nameInput = document.getElementById('player-name-input');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const changeNameBtn = document.getElementById('change-name-btn');
+        const musicToggleBtn = document.getElementById('music-toggle-btn');
+
+        const savedName = localStorage.getItem('cocoa_player_name');
+        if (savedName) {
+            nameInput.value = savedName;
+        }
+
+        function startGame() {
+            const name = nameInput.value.trim() || '익명의 산타';
+            gameState.playerName = name;
+            localStorage.setItem('cocoa_player_name', name);
+
+            document.getElementById('player-display-name').innerText = name;
+            document.getElementById('score-display').innerText = '0';
+            document.getElementById('timer-display').innerText = '60s';
+
+            gameState.running = true;
+            gameState.score = 0;
+            gameState.timeLeft = 60;
+            gameState.lastTime = 0;
+            gameState.spawnTimer = 0;
+            marshmallows = [];
+            floatTexts = [];
+
+            resizeCanvas();
+
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            hud.classList.remove('hidden');
+
+            bgmPlayer.start();
+
+            if (gameState.timerIntervalId) clearInterval(gameState.timerIntervalId);
+            gameState.timerIntervalId = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timer-display').innerText = `${gameState.timeLeft}s`;
+
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function endGame() {
+            gameState.running = false;
+            clearInterval(gameState.timerIntervalId);
+
+            document.getElementById('final-score').innerText = `${gameState.score}점`;
+
+            const leaderboard = saveScore(gameState.playerName, gameState.score);
+            updateLeaderboardUI(leaderboard, gameState.playerName, gameState.score);
+
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function saveScore(name, score) {
+            let scores = JSON.parse(localStorage.getItem('cocoa_leaderboard') || '[]');
+            scores.push({
+                name: name,
+                score: score,
+                date: new Date().toLocaleDateString()
+            });
+
+            scores.sort((a, b) => b.score - a.score);
+            scores = scores.slice(0, 20);
+
+            localStorage.setItem('cocoa_leaderboard', JSON.stringify(scores));
+            return scores;
+        }
+
+        function updateLeaderboardUI(scores, currentName, currentScore) {
+            const listEl = document.getElementById('leaderboard-list');
+            listEl.innerHTML = '';
+
+            let playerRank = -1;
+
+            scores.forEach((entry, index) => {
+                const isCurrent = (entry.name === currentName && entry.score === currentScore && playerRank === -1);
+                if (isCurrent) playerRank = index + 1;
+
+                const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `${index + 1}.`));
+                
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-2 rounded-xl text-sm ${
+                    isCurrent ? 'bg-pink-100 border border-pink-300 font-bold text-pink-700' : 'bg-pink-50/60 text-stone-700'
+                }`;
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 text-center font-bold">${medal}</span>
+                        <span>${escapeHtml(entry.name)}</span>
+                    </div>
+                    <span class="font-extrabold ${isCurrent ? 'text-pink-600' : 'text-amber-600'}">${entry.score}점</span>
+                `;
+                listEl.appendChild(item);
+            });
+
+            const rankBadge = document.getElementById('rank-badge');
+            if (playerRank !== -1) {
+                rankBadge.innerText = `현재 순위: ${playerRank}위`;
+            } else {
+                rankBadge.innerText = `현재 순위: 순위 밖`;
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        
+        changeNameBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            nameInput.focus();
+        });
+
+        musicToggleBtn.addEventListener('click', () => {
+            const muted = bgmPlayer.toggleMute();
+            musicToggleBtn.innerHTML = muted ? '<i class="fas fa-volume-mute text-pink-300"></i>' : '<i class="fas fa-music"></i>';
+        });
+
+        resizeCanvas();
+        render();
+
+    </script>
+</body>
+</html>
